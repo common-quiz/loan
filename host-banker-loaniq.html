@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LoanIQ — Banker Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0c0e14;
+    --bg2: #12151f;
+    --bg3: #181c28;
+    --card: #161a25;
+    --card2: #1c2130;
+    --border: rgba(148,163,184,0.08);
+    --border2: rgba(148,163,184,0.16);
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --red: #f43f5e;
+    --amber: #f59e0b;
+    --blue: #38bdf8;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --mono: 'JetBrains Mono', monospace;
+    --r: 10px;
+    --r-lg: 16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 70% 20%,rgba(99,102,241,0.06) 0%,transparent 60%);pointer-events:none;z-index:0;}
+  nav{position:sticky;top:0;z-index:200;background:rgba(12,14,20,0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;}
+  .nav-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px;display:flex;align-items:center;gap:10px;}
+  .nav-logo .tag{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.08em;}
+  .nav-meta{display:flex;align-items:center;gap:12px;}
+  .live-indicator{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .app-count-badge{background:var(--card2);border:1px solid var(--border2);border-radius:8px;padding:5px 12px;font-size:12px;color:var(--text2);font-family:var(--mono);}
+  .app-count-badge strong{color:var(--accent2);}
+  .layout{position:relative;z-index:1;display:grid;grid-template-columns:340px 1fr;min-height:calc(100vh - 60px);}
+  @media(max-width:900px){.layout{grid-template-columns:1fr;}}
+  .sidebar{border-right:1px solid var(--border);background:var(--bg2);display:flex;flex-direction:column;}
+  .sidebar-header{padding:20px;border-bottom:1px solid var(--border);}
+  .sidebar-header h2{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;}
+  .sidebar-header p{font-size:12px;color:var(--text3);}
+  .filter-tabs{display:flex;gap:4px;padding:12px 20px;border-bottom:1px solid var(--border);}
+  .ftab{flex:1;text-align:center;padding:6px 4px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;transition:all 0.15s;color:var(--text3);letter-spacing:0.04em;}
+  .ftab.active{background:var(--card2);color:var(--text);border:1px solid var(--border2);}
+  .ftab:hover:not(.active){color:var(--text2);}
+  .app-list{flex:1;overflow-y:auto;padding:12px;}
+  .app-list::-webkit-scrollbar{width:4px;}
+  .app-list::-webkit-scrollbar-track{background:transparent;}
+  .app-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+  .app-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;position:relative;}
+  .app-card:hover{border-color:var(--border2);background:var(--card2);}
+  .app-card.selected{border-color:var(--accent);background:rgba(99,102,241,0.06);}
+  .app-card.approved{border-left:3px solid var(--green);}
+  .app-card.rejected{border-left:3px solid var(--red);}
+  .app-card.pending{border-left:3px solid var(--amber);}
+  .app-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+  .app-card-name{font-size:14px;font-weight:600;color:var(--text);}
+  .app-card-id{font-size:10px;font-family:var(--mono);color:var(--text3);margin-top:2px;}
+  .app-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+  .app-status-dot.pending{background:var(--amber);box-shadow:0 0 6px var(--amber);}
+  .app-status-dot.approved{background:var(--green);}
+  .app-status-dot.rejected{background:var(--red);}
+  .app-card-meta{display:flex;gap:6px;flex-wrap:wrap;}
+  .meta-chip{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:10px;color:var(--text2);font-family:var(--mono);}
+  .meta-chip.score-high{border-color:rgba(34,197,94,0.3);color:var(--green);}
+  .meta-chip.score-mid{border-color:rgba(245,158,11,0.3);color:var(--amber);}
+  .meta-chip.score-low{border-color:rgba(244,63,94,0.3);color:var(--red);}
+  .app-card-time{font-size:10px;color:var(--text3);margin-top:6px;}
+  .empty-list{padding:40px 20px;text-align:center;color:var(--text3);}
+  .empty-list .ei{font-size:40px;margin-bottom:12px;}
+  .empty-list p{font-size:13px;line-height:1.6;}
+  .detail{background:var(--bg);padding:28px;overflow-y:auto;}
+  .detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;text-align:center;color:var(--text3);}
+  .detail-empty .de-icon{font-size:64px;margin-bottom:16px;opacity:0.4;}
+  .detail-empty h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text2);margin-bottom:8px;}
+  .detail-empty p{font-size:13px;max-width:300px;line-height:1.7;}
+  .detail-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap;}
+  .dh-left h1{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px;}
+  .dh-left p{font-size:13px;color:var(--text2);}
+  .app-id-mono{font-family:var(--mono);font-size:11px;color:var(--accent2);background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);padding:3px 8px;border-radius:5px;margin-top:4px;display:inline-block;}
+  .status-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+  .status-pill.pending{background:rgba(245,158,11,0.12);color:var(--amber);border:1px solid rgba(245,158,11,0.3);}
+  .status-pill.approved{background:rgba(34,197,94,0.12);color:var(--green);border:1px solid rgba(34,197,94,0.3);}
+  .status-pill.rejected{background:rgba(244,63,94,0.12);color:var(--red);border:1px solid rgba(244,63,94,0.3);}
+  .verdict-box{border-radius:var(--r-lg);padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;gap:20px;}
+  .verdict-box.sufficient{background:linear-gradient(135deg,rgba(34,197,94,0.08),rgba(34,197,94,0.03));border:1px solid rgba(34,197,94,0.2);}
+  .verdict-box.borderline{background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.03));border:1px solid rgba(245,158,11,0.2);}
+  .verdict-box.insufficient{background:linear-gradient(135deg,rgba(244,63,94,0.08),rgba(244,63,94,0.03));border:1px solid rgba(244,63,94,0.2);}
+  .verdict-icon{font-size:36px;flex-shrink:0;}
+  .verdict-text h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+  .verdict-text p{font-size:13px;color:var(--text2);line-height:1.6;}
+  .verdict-score-badge{margin-left:auto;flex-shrink:0;text-align:center;}
+  .verdict-score-badge .vs-num{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;line-height:1;}
+  .verdict-score-badge .vs-lbl{font-size:10px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+  .section{margin-bottom:24px;}
+  .section-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;}
+  .info-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;}
+  .info-card .ic-label{font-size:10px;color:var(--text3);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:6px;}
+  .info-card .ic-val{font-size:16px;font-weight:600;color:var(--text);}
+  .info-card .ic-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+  .factor-rows{display:flex;flex-direction:column;gap:10px;}
+  .factor-row{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;}
+  .factor-row-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .factor-name{font-size:13px;font-weight:500;}
+  .factor-pts{font-size:12px;font-family:var(--mono);padding:2px 8px;border-radius:5px;}
+  .factor-pts.high{background:rgba(34,197,94,0.12);color:var(--green);}
+  .factor-pts.mid{background:rgba(245,158,11,0.12);color:var(--amber);}
+  .factor-pts.low{background:rgba(244,63,94,0.12);color:var(--red);}
+  .factor-bar-bg{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;}
+  .factor-bar-fill{height:100%;border-radius:2px;transition:width 0.8s cubic-bezier(.4,0,.2,1);}
+  .reason-list{display:flex;flex-direction:column;gap:8px;}
+  .reason-item{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--text2);}
+  .reason-dot{width:8px;height:8px;border-radius:50%;margin-top:3px;flex-shrink:0;}
+  .decision-panel{background:var(--card2);border:1px solid var(--border2);border-radius:var(--r-lg);padding:24px;margin-bottom:24px;}
+  .decision-panel h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px;}
+  .decision-panel p{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;}
+  .note-input{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:10px 14px;outline:none;resize:vertical;min-height:70px;margin-bottom:16px;transition:border-color 0.2s;}
+  .note-input:focus{border-color:var(--accent);}
+  .note-input::placeholder{color:var(--text3);}
+  .decision-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .btn-approve{background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:14px;cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;box-shadow:0 4px 20px rgba(34,197,94,0.2);}
+  .btn-approve:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(34,197,94,0.3);}
+  .btn-reject{background:linear-gradient(135deg,#be123c,#9f1239);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:14px;cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;box-shadow:0 4px 20px rgba(244,63,94,0.2);}
+  .btn-reject:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(244,63,94,0.3);}
+  .btn-approve:disabled,.btn-reject:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+  .decided-banner{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:10px;font-size:14px;font-weight:600;}
+  .decided-banner.approved{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:var(--green);}
+  .decided-banner.rejected{background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);color:var(--red);}
+  .toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--card2);border:1px solid var(--border2);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px;min-width:280px;box-shadow:0 16px 48px rgba(0,0,0,0.5);transform:translateY(60px);opacity:0;transition:all 0.4s cubic-bezier(.4,0,.2,1);}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast-text strong{display:block;font-size:13px;}
+  .toast-text span{font-size:12px;color:var(--text2);}
+  .hidden{display:none!important;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .fade-in{animation:fadeIn 0.3s ease;}
+  .fb-status{font-size:11px;padding:4px 10px;border-radius:6px;font-family:var(--mono);}
+  .fb-status.connected{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
+  .fb-status.connecting{background:rgba(245,158,11,0.1);color:var(--amber);border:1px solid rgba(245,158,11,0.2);}
+  .fb-status.error{background:rgba(244,63,94,0.1);color:var(--red);border:1px solid rgba(244,63,94,0.2);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    Loan<span style="color:var(--accent2)">IQ</span>
+    <span class="tag">BANKER</span>
+  </div>
+  <div class="nav-meta">
+    <span class="fb-status connecting" id="fbStatus">⟳ Connecting...</span>
+    <div class="live-indicator">
+      <span class="live-dot"></span> Live Feed
+    </div>
+    <div class="app-count-badge">Applications: <strong id="totalCount">0</strong></div>
+  </div>
+</nav>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2>Applications Queue</h2>
+      <p>Real-time via Firebase — updates instantly</p>
+    </div>
+    <div class="filter-tabs">
+      <div class="ftab active" onclick="setFilter('all',this)">All</div>
+      <div class="ftab" onclick="setFilter('pending',this)">Pending</div>
+      <div class="ftab" onclick="setFilter('approved',this)">Approved</div>
+      <div class="ftab" onclick="setFilter('rejected',this)">Rejected</div>
+    </div>
+    <div class="app-list" id="appList">
+      <div class="empty-list">
+        <div class="ei">🔌</div>
+        <p>Connecting to Firebase...<br/>Applications will appear here automatically.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail" id="detailPanel">
+    <div class="detail-empty" id="detailEmpty">
+      <div class="de-icon">🏛️</div>
+      <h3>Banker's Review Console</h3>
+      <p>Select an application from the queue on the left to begin your review.</p>
+    </div>
+    <div id="detailContent" class="hidden"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span style="font-size:20px" id="toastIcon">✅</span>
+  <div class="toast-text">
+    <strong id="toastTitle">Decision Sent</strong>
+    <span id="toastMsg">Notification dispatched to applicant.</span>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, onSnapshot, updateDoc, addDoc, query, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBR5YmP8R8Yt5DJWhZOUx43JsJe4KmJrbQ",
+    authDomain: "loan-prediction-system-934d0.firebaseapp.com",
+    databaseURL: "https://loan-prediction-system-934d0-default-rtdb.firebaseio.com",
+    projectId: "loan-prediction-system-934d0",
+    storageBucket: "loan-prediction-system-934d0.firebasestorage.app",
+    messagingSenderId: "476459816952",
+    appId: "1:476459816952:web:your-app-id"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  let apps = [];
+  let selectedId = null;
+  let currentFilter = 'all';
+
+  // Listen to applications in real-time
+  const appsQuery = query(collection(db, 'applications'), orderBy('submittedAt', 'desc'));
+  onSnapshot(appsQuery, (snapshot) => {
+    apps = snapshot.docs.map(d => ({ _docId: d.id, ...d.data() }));
+    document.getElementById('totalCount').textContent = apps.length;
+    document.getElementById('fbStatus').textContent = '● Firebase Live';
+    document.getElementById('fbStatus').className = 'fb-status connected';
+    renderList();
+    if (selectedId) {
+      const app = apps.find(a => a.id === selectedId);
+      if (app) renderDetail(app);
+    }
+  }, (err) => {
+    console.error(err);
+    document.getElementById('fbStatus').textContent = '✕ Error';
+    document.getElementById('fbStatus').className = 'fb-status error';
+  });
+
+  window.setFilter = function(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderList();
+  };
+
+  function renderList() {
+    const list = document.getElementById('appList');
+    let filtered = currentFilter === 'all' ? apps : apps.filter(a => a.status === currentFilter);
+    if (!filtered.length) {
+      list.innerHTML = `<div class="empty-list"><div class="ei">${currentFilter==='pending'?'⏳':currentFilter==='approved'?'✅':'📭'}</div><p>${currentFilter==='all'?'No applications yet.<br/>Waiting for guest submissions.':'No '+currentFilter+' applications.'}</p></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(app => {
+      const scoreClass = app.score >= 68 ? 'score-high' : app.score >= 50 ? 'score-mid' : 'score-low';
+      const ts = app.submittedAt?.toDate ? app.submittedAt.toDate() : new Date(app.submittedAt);
+      const time = ts.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="app-card ${app.status} ${selectedId === app.id ? 'selected' : ''}" onclick="selectApp('${app.id}')">
+        <div class="app-card-top">
+          <div>
+            <div class="app-card-name">${app.name || 'Applicant'}</div>
+            <div class="app-card-id">${app.id}</div>
+          </div>
+          <span class="app-status-dot ${app.status}"></span>
+        </div>
+        <div class="app-card-meta">
+          <span class="meta-chip ${scoreClass}">${app.score}% score</span>
+          <span class="meta-chip">₹${parseInt(app.loan_amount).toLocaleString('en-IN')}</span>
+          <span class="meta-chip">${app.purpose || '-'}</span>
+        </div>
+        <div class="app-card-time">${time} · ${app.employment || '-'}</div>
+      </div>`;
+    }).join('');
+  }
+
+  window.selectApp = function(id) {
+    selectedId = id;
+    const app = apps.find(a => a.id === id);
+    if (!app) return;
+    renderList();
+    renderDetail(app);
+  };
+
+  function renderDetail(app) {
+    document.getElementById('detailEmpty').classList.add('hidden');
+    const dc = document.getElementById('detailContent');
+    dc.classList.remove('hidden');
+
+    const score = app.score;
+    let vClass, vIcon, vTitle, vMsg;
+    if (score >= 68) { vClass='sufficient'; vIcon='✅'; vTitle='Sufficient for Approval'; vMsg='This application meets standard lending criteria. Credit profile, income, and DTI are within acceptable thresholds. Recommend approval.'; }
+    else if (score >= 50) { vClass='borderline'; vIcon='⚠️'; vTitle='Borderline — Review Required'; vMsg='This application sits in the grey zone. Some risk factors need manual assessment. Your judgment is required before proceeding.'; }
+    else { vClass='insufficient'; vIcon='🚫'; vTitle='Insufficient — High Risk'; vMsg='This application has significant risk factors. Credit score, DTI, or repayment history fall below minimum thresholds. Rejection recommended.'; }
+
+    const scoreColor = score >= 68 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
+    const purposeLabels = {home:'Home Purchase',education:'Education',vehicle:'Vehicle',business:'Business',medical:'Medical',personal:'Personal',debt_consolidation:'Debt Consolidation'};
+    const collateralLabels = {none:'None',property:'Property',vehicle:'Vehicle',gold:'Gold',fd:'Fixed Deposit'};
+
+    const cs_p = app.credit_score>=800?30:app.credit_score>=750?26:app.credit_score>=700?21:app.credit_score>=650?15:app.credit_score>=600?9:app.credit_score>=550?4:0;
+    const monthly_income = app.income / 12;
+    const total_emi = app.existing_emi + app.loan_amount / app.tenure;
+    const dti = total_emi / monthly_income;
+    const dti_p = dti<=0.25?25:dti<=0.35?20:dti<=0.45?13:dti<=0.55?6:0;
+    const emp_p_base = app.employment==='salaried'?15:app.employment==='business'?12:app.employment==='self_employed'?10:app.employment==='freelance'?6:0;
+    const emp_p = Math.min(emp_p_base + (app.years_emp >= 3 ? 3 : 0), 15);
+    const def_p = app.defaults===0?15:app.defaults===1?7:app.defaults===2?3:0;
+    const col_map = {none:0,vehicle:5,gold:8,fd:7,property:10};
+    const col_p = col_map[app.collateral] || 0;
+
+    const factors = [
+      {name:'Credit Score', pts:cs_p, max:30},
+      {name:'Debt-to-Income', pts:dti_p, max:25},
+      {name:'Employment', pts:emp_p, max:15},
+      {name:'Default History', pts:def_p, max:15},
+      {name:'Collateral', pts:col_p, max:10},
+    ];
+
+    const factorHTML = factors.map(f => {
+      const r = f.pts / f.max;
+      const cls = r >= 0.7 ? 'high' : r >= 0.4 ? 'mid' : 'low';
+      const color = r >= 0.7 ? 'var(--green)' : r >= 0.4 ? 'var(--amber)' : 'var(--red)';
+      const pct = Math.round(r * 100);
+      return `<div class="factor-row">
+        <div class="factor-row-top">
+          <span class="factor-name">${f.name}</span>
+          <span class="factor-pts ${cls}">${f.pts}/${f.max} pts</span>
+        </div>
+        <div class="factor-bar-bg">
+          <div class="factor-bar-fill" style="background:${color};width:0%" data-w="${pct}"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const reasonsHTML = (app.reasons || []).map(r => {
+      const isGood = r.includes('excellent')||r.includes('stable')||r.includes('comfortable')||r.includes('Zero')||r.includes('collateral')||r.includes('acceptable')||r.includes('reduces');
+      const c = isGood ? 'var(--green)' : r.includes('flag')||r.includes('below')||r.includes('risk')||r.includes('exceed') ? 'var(--red)' : 'var(--amber)';
+      return `<div class="reason-item"><span class="reason-dot" style="background:${c}"></span>${r}</div>`;
+    }).join('');
+
+    const isDecided = app.status !== 'pending';
+    const decidedHTML = isDecided ? `
+      <div class="decided-banner ${app.status}">
+        ${app.status === 'approved' ? '✅ Approved — Decision sent to applicant' : '❌ Rejected — Decision sent to applicant'}
+      </div>` : `
+      <textarea class="note-input" id="bankerNote" placeholder="Optional note to applicant (e.g. reason, condition, etc.)..."></textarea>
+      <div class="decision-btns">
+        <button class="btn-approve" onclick="makeDecision('approved')">✅ Approve Loan</button>
+        <button class="btn-reject" onclick="makeDecision('rejected')">❌ Reject Application</button>
+      </div>`;
+
+    const ts = app.submittedAt?.toDate ? app.submittedAt.toDate() : new Date(app.submittedAt);
+
+    dc.innerHTML = `<div class="fade-in">
+      <div class="detail-header">
+        <div class="dh-left">
+          <h1>${app.name || 'Applicant'}</h1>
+          <div class="app-id-mono">${app.id}</div>
+          <p style="margin-top:8px">Submitted ${ts.toLocaleString('en-IN')}</p>
+        </div>
+        <span class="status-pill ${app.status}">${app.status.toUpperCase()}</span>
+      </div>
+
+      <div class="verdict-box ${vClass}">
+        <div class="verdict-icon">${vIcon}</div>
+        <div class="verdict-text">
+          <h3 style="color:${scoreColor}">${vTitle}</h3>
+          <p>${vMsg}</p>
+        </div>
+        <div class="verdict-score-badge">
+          <div class="vs-num" style="color:${scoreColor}">${score}%</div>
+          <div class="vs-lbl">AI Score</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Applicant Profile</div>
+        <div class="info-grid">
+          <div class="info-card"><div class="ic-label">Age</div><div class="ic-val">${app.age} yrs</div></div>
+          <div class="info-card"><div class="ic-label">Employment</div><div class="ic-val" style="text-transform:capitalize">${(app.employment||'-').replace('_',' ')}</div><div class="ic-sub">${app.years_emp} yr(s) experience</div></div>
+          <div class="info-card"><div class="ic-label">Annual Income</div><div class="ic-val">₹${parseInt(app.income).toLocaleString('en-IN')}</div><div class="ic-sub">₹${Math.round(app.income/12).toLocaleString('en-IN')}/mo</div></div>
+          <div class="info-card"><div class="ic-label">Credit Score</div><div class="ic-val" style="color:${scoreColor}">${app.credit_score}</div></div>
+          <div class="info-card"><div class="ic-label">Existing Loans</div><div class="ic-val">${app.num_loans}</div></div>
+          <div class="info-card"><div class="ic-label">Past Defaults</div><div class="ic-val" style="color:${app.defaults>0?'var(--red)':'var(--green)'}">${app.defaults}</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Loan Request</div>
+        <div class="info-grid">
+          <div class="info-card"><div class="ic-label">Loan Amount</div><div class="ic-val">₹${parseInt(app.loan_amount).toLocaleString('en-IN')}</div></div>
+          <div class="info-card"><div class="ic-label">Tenure</div><div class="ic-val">${app.tenure} months</div></div>
+          <div class="info-card"><div class="ic-label">Purpose</div><div class="ic-val">${purposeLabels[app.purpose]||app.purpose}</div></div>
+          <div class="info-card"><div class="ic-label">Collateral</div><div class="ic-val">${collateralLabels[app.collateral]||app.collateral}</div></div>
+          <div class="info-card"><div class="ic-label">Existing EMIs</div><div class="ic-val">₹${parseInt(app.existing_emi||0).toLocaleString('en-IN')}/mo</div></div>
+          <div class="info-card"><div class="ic-label">DTI Ratio</div><div class="ic-val" style="color:${dti*100>50?'var(--red)':dti*100>35?'var(--amber)':'var(--green)'}">${app.dtiPct}%</div></div>
+          <div class="info-card"><div class="ic-label">Suggested Rate</div><div class="ic-val">${app.suggestedRate}% p.a.</div></div>
+          <div class="info-card"><div class="ic-label">Est. Monthly EMI</div><div class="ic-val">₹${parseInt(app.emi||0).toLocaleString('en-IN')}</div></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Risk Factor Breakdown</div>
+        <div class="factor-rows">${factorHTML}</div>
+      </div>
+
+      ${reasonsHTML ? `<div class="section">
+        <div class="section-title">AI Analysis</div>
+        <div class="reason-list">${reasonsHTML}</div>
+      </div>` : ''}
+
+      <div class="decision-panel">
+        <h3>🏛️ Banker's Decision</h3>
+        <p>Review the application above. The AI suggests: <strong style="color:${scoreColor}">${vTitle}</strong>. Override as needed.</p>
+        ${decidedHTML}
+      </div>
+    </div>`;
+
+    setTimeout(() => {
+      document.querySelectorAll('.factor-bar-fill').forEach(el => {
+        el.style.width = el.dataset.w + '%';
+      });
+    }, 100);
+  }
+
+  window.makeDecision = async function(decision) {
+    if (!selectedId) return;
+    const app = apps.find(a => a.id === selectedId);
+    if (!app) return;
+
+    const note = document.getElementById('bankerNote')?.value?.trim() || '';
+
+    try {
+      // Update application status in Firebase
+      const appDocRef = doc(db, 'applications', app._docId);
+      await updateDoc(appDocRef, { status: decision, decidedAt: serverTimestamp(), bankerNote: note });
+
+      // Write decision to 'decisions' collection so guest can pick it up
+      await addDoc(collection(db, 'decisions'), {
+        appId: app.id,
+        decision,
+        loanAmount: app.loan_amount,
+        score: app.score,
+        note,
+        decidedAt: serverTimestamp()
+      });
+
+      // Show toast
+      const toast = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = decision === 'approved' ? '✅' : '❌';
+      document.getElementById('toastTitle').textContent = decision === 'approved' ? 'Loan Approved!' : 'Application Rejected';
+      document.getElementById('toastMsg').textContent = `Decision saved for ${app.name}.`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+
+    } catch (err) {
+      console.error('Firebase error:', err);
+      alert('Error saving decision: ' + err.message);
+    }
+  };
+</script>
+</body>
+</html>
