@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LoanIQ — Applicant Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0f1e;--bg2:#111827;--bg3:#1a2235;--card:#141c2e;--border:rgba(99,179,237,.12);--border2:rgba(99,179,237,.25);--accent:#3b82f6;--accent2:#60a5fa;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--text:#f0f4ff;--text2:#94a3b8;--text3:#64748b;--r:12px;--rlg:18px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 20% 20%,rgba(59,130,246,.07),transparent 50%),radial-gradient(circle at 80% 80%,rgba(16,185,129,.05),transparent 50%);pointer-events:none;z-index:0}
+nav{position:sticky;top:0;z-index:100;background:rgba(10,15,30,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:-.5px}
+.nav-logo span{color:var(--accent2)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:12px;font-weight:500;background:rgba(59,130,246,.15);color:var(--accent2);border:1px solid rgba(59,130,246,.3);padding:4px 12px;border-radius:20px}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite;margin-right:6px}
+.notif-bell{position:relative;cursor:pointer;background:var(--card);border:1px solid var(--border);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s}
+.notif-bell:hover{border-color:var(--accent);background:rgba(59,130,246,.1)}
+.notif-count{position:absolute;top:-6px;right:-6px;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:50%;width:18px;height:18px;display:none;align-items:center;justify-content:center;border:2px solid var(--bg)}
+.notif-count.show{display:flex}
+.notif-panel{position:absolute;top:72px;right:16px;width:360px;background:var(--card);border:1px solid var(--border2);border-radius:var(--rlg);z-index:999;box-shadow:0 24px 64px rgba(0,0,0,.5);display:none;overflow:hidden;animation:slideDown .2s ease}
+.notif-panel.open{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.notif-panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.notif-panel-header h3{font-size:15px;font-weight:600}
+.notif-panel-header span{font-size:12px;color:var(--text3)}
+.notif-list{max-height:400px;overflow-y:auto}
+.notif-empty{padding:40px 20px;text-align:center;color:var(--text3);font-size:13px}
+.notif-item{padding:16px 20px;border-bottom:1px solid var(--border);animation:fadeIn .4s ease}
+.notif-item.approved{border-left:3px solid var(--green)}
+.notif-item.rejected{border-left:3px solid var(--red)}
+.notif-item-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.notif-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.notif-badge.approved{background:rgba(16,185,129,.15);color:var(--green)}
+.notif-badge.rejected{background:rgba(239,68,68,.15);color:var(--red)}
+.notif-time{font-size:11px;color:var(--text3);margin-left:auto}
+.notif-msg{font-size:13px;color:var(--text2);line-height:1.5}
+.notif-loan{font-size:12px;color:var(--accent2);margin-top:4px}
+.toast{position:fixed;bottom:24px;right:24px;z-index:9999;background:var(--card);border:1px solid var(--border2);border-radius:var(--r);padding:16px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 16px 48px rgba(0,0,0,.4);min-width:300px;transform:translateY(80px);opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-icon{font-size:22px}
+.toast-text strong{display:block;font-size:14px;margin-bottom:2px}
+.toast-text span{font-size:12px;color:var(--text2)}
+.toast.approved{border-left:3px solid var(--green)}
+.toast.rejected{border-left:3px solid var(--red)}
+.hero{position:relative;z-index:1;text-align:center;padding:72px 2rem 48px;max-width:720px;margin:0 auto;animation:fadeUp .7s ease both}
+.hero-tag{display:inline-block;font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);padding:5px 16px;border-radius:20px;margin-bottom:24px}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(36px,6vw,58px);font-weight:700;line-height:1.1;margin-bottom:16px;letter-spacing:-1px}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:17px;color:var(--text2);line-height:1.7;max-width:520px;margin:0 auto;font-weight:300}
+.stats-row{position:relative;z-index:1;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;padding:0 2rem 56px;animation:fadeUp .7s .1s ease both}
+.stat-chip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:50px;padding:8px 16px;font-size:13px;color:var(--text2)}
+.stat-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.main{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 2rem 80px;display:grid;grid-template-columns:1fr 400px;gap:28px;align-items:start;animation:fadeUp .7s .2s ease both}
+@media(max-width:900px){.main{grid-template-columns:1fr}.sticky-result{position:static!important}}
+@media(max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr}}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden}
+.form-card-header{background:var(--bg3);border-bottom:1px solid var(--border);padding:20px 28px;display:flex;align-items:center;gap:12px}
+.form-card-header .icon{width:36px;height:36px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.form-card-header h2{font-size:16px;font-weight:500}
+.form-card-header p{font-size:13px;color:var(--text2);margin-top:2px}
+.form-body{padding:28px}
+.section-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.section-gap{margin-bottom:28px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:7px}
+.field label{font-size:12px;font-weight:500;color:var(--text2);letter-spacing:.02em}
+.field input,.field select{background:var(--bg2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 14px;outline:none;transition:border-color .2s;width:100%;-webkit-appearance:none}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.field select option{background:#1a2235}
+.field input::placeholder{color:var(--text3)}
+.slider-wrap{display:flex;flex-direction:column;gap:10px}
+.slider-top{display:flex;justify-content:space-between;align-items:center}
+.slider-top label{font-size:12px;font-weight:500;color:var(--text2)}
+.val-badge{font-size:13px;font-weight:600;color:var(--accent2);background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);padding:3px 10px;border-radius:6px;min-width:60px;text-align:center}
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:var(--bg2);border-radius:2px;border:1px solid var(--border);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 8px rgba(59,130,246,.5);cursor:pointer;transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.slider-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text3)}
+.cs-bar-track{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden;margin-top:6px}
+.cs-bar-fill{height:100%;border-radius:3px;transition:width .3s,background .3s}
+.cs-label{font-size:12px;font-weight:500;margin-top:4px}
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:none;border-radius:12px;color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s,transform .15s;letter-spacing:.02em;margin-top:8px;box-shadow:0 4px 24px rgba(59,130,246,.25)}
+.submit-btn:hover{opacity:.9;transform:translateY(-1px)}
+.submit-btn:active{transform:translateY(0)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.sticky-result{position:sticky;top:80px}
+.result-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden}
+.result-header{padding:24px 24px 20px;border-bottom:1px solid var(--border);text-align:center}
+.result-status{font-size:22px;font-weight:700;font-family:'Playfair Display',serif;margin-bottom:4px}
+.result-sub{font-size:13px;color:var(--text2)}
+.status-approved{color:var(--green)}.status-rejected{color:var(--red)}.status-review{color:var(--amber)}
+.score-circle-wrap{display:flex;justify-content:center;margin:20px 0 16px}
+.score-circle{position:relative;width:120px;height:120px}
+.score-circle svg{transform:rotate(-90deg)}
+.score-circle-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-circle-text .num{font-size:28px;font-weight:700;font-family:'Playfair Display',serif;line-height:1}
+.score-circle-text .lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.result-body{padding:20px 24px}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.metric-card .m-label{font-size:11px;color:var(--text3);margin-bottom:5px}
+.metric-card .m-val{font-size:17px;font-weight:600}
+.factor-row{margin-bottom:12px}
+.factor-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.factor-top .f-name{color:var(--text2)}.factor-top .f-pct{font-weight:600}
+.factor-bar-bg{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.factor-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1);width:0%}
+.reason-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.5}
+.reason-item:last-child{border-bottom:none}
+.reason-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.idle-state{padding:40px 24px;text-align:center}
+.idle-icon{width:64px;height:64px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px}
+.idle-state h3{font-size:16px;font-weight:500;margin-bottom:8px}
+.idle-state p{font-size:13px;color:var(--text2);line-height:1.6}
+.checklist{margin-top:24px;text-align:left;display:flex;flex-direction:column;gap:10px}
+.check-item{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--text2)}
+.check-item .ck{width:20px;height:20px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:11px;flex-shrink:0}
+.pending-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 16px;margin-top:16px;align-items:center;gap:10px;font-size:13px;color:var(--amber);display:none}
+.pending-banner.show{display:flex}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);animation:pulse 1.5s infinite;flex-shrink:0}
+.app-id-badge{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px 14px;margin-top:16px;font-size:12px;color:var(--text2);display:none}
+.app-id-badge.show{display:block}
+.app-id-badge strong{color:var(--accent2);font-family:monospace}
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:24px 2rem;text-align:center;font-size:13px;color:var(--text3)}
+footer strong{color:var(--text2);font-weight:500}
+.hidden{display:none!important}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Loan<span>IQ</span></div>
+  <div class="nav-right" style="position:relative">
+    <span class="nav-badge"><span class="live-dot"></span>Applicant Portal</span>
+    <div class="notif-bell" onclick="toggleNotif()" id="notifBell">🔔
+      <div class="notif-count" id="notifCount">0</div>
+    </div>
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-panel-header">
+        <h3>📬 Loan Decisions</h3>
+        <span id="notifTimestamp">No decisions yet</span>
+      </div>
+      <div class="notif-list" id="notifList">
+        <div class="notif-empty">No notifications yet.<br/>Submit an application to get started.</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toastIcon">🏦</div>
+  <div class="toast-text">
+    <strong id="toastTitle">Decision Received</strong>
+    <span id="toastMsg">Your loan application has been reviewed.</span>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-tag">Instant Credit Decision Engine</div>
+  <h1>Know your loan<br/>approval in <em>seconds</em></h1>
+  <p>Enter your financial profile and get a real-time prediction powered by a multi-factor credit scoring model.</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-chip"><span class="dot"></span>6 Risk Factors Analyzed</div>
+  <div class="stat-chip"><span class="dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b"></span>EMI Calculator Included</div>
+  <div class="stat-chip"><span class="dot" style="background:#a78bfa;box-shadow:0 0 6px #a78bfa"></span>Instant Results</div>
+</div>
+
+<div class="main">
+  <div class="form-card">
+    <div class="form-card-header">
+      <div class="icon">📋</div>
+      <div><h2>Applicant Details</h2><p>Fill all fields for accurate prediction</p></div>
+    </div>
+    <div class="form-body">
+      <div class="section-gap">
+        <div class="section-label">Personal Information</div>
+        <div class="grid-3">
+          <div class="field"><label>Full Name</label><input type="text" id="full_name" placeholder="e.g. Arjun Kumar"/></div>
+          <div class="field"><label>Age</label><input type="number" id="age" min="18" max="75" placeholder="e.g. 32"/></div>
+          <div class="field"><label>Employment Status</label>
+            <select id="employment"><option value="">Select</option><option value="salaried">Salaried</option><option value="self_employed">Self-employed</option><option value="business">Business owner</option><option value="freelance">Freelancer</option><option value="unemployed">Unemployed</option></select>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="field"><label>Years Employed</label><input type="number" id="years_emp" min="0" max="50" placeholder="e.g. 5"/></div>
+        </div>
+      </div>
+      <div class="section-gap">
+        <div class="section-label">Financial Details</div>
+        <div class="grid-2">
+          <div class="field"><label>Annual Income (₹)</label><input type="number" id="income" placeholder="e.g. 600000"/></div>
+          <div class="field"><label>Requested Loan Amount (₹)</label><input type="number" id="loan_amount" placeholder="e.g. 500000"/></div>
+          <div class="field"><label>Loan Tenure</label>
+            <select id="tenure"><option value="">Select</option><option value="12">12 months</option><option value="24">24 months</option><option value="36">36 months</option><option value="48">48 months</option><option value="60">60 months</option><option value="84">84 months</option><option value="120">120 months</option></select>
+          </div>
+          <div class="field"><label>Existing Monthly EMIs (₹)</label><input type="number" id="existing_emi" placeholder="e.g. 10000"/></div>
+        </div>
+      </div>
+      <div class="section-gap">
+        <div class="section-label">Credit Profile</div>
+        <div class="slider-wrap" style="margin-bottom:20px">
+          <div class="slider-top"><label>Credit Score</label><span class="val-badge" id="cs_val">650</span></div>
+          <input type="range" id="credit_score" min="300" max="900" value="650" oninput="updateCS(this.value)"/>
+          <div class="slider-labels"><span>300 — Poor</span><span>600 — Fair</span><span>900 — Excellent</span></div>
+          <div class="cs-bar-track"><div class="cs-bar-fill" id="cs_bar" style="width:35%;background:#ef4444"></div></div>
+          <div class="cs-label" id="cs_text" style="color:#ef4444">Poor</div>
+        </div>
+        <div class="grid-2">
+          <div class="slider-wrap">
+            <div class="slider-top"><label>No. of Existing Loans</label><span class="val-badge" id="nl_val">1</span></div>
+            <input type="range" id="num_loans" min="0" max="10" value="1" oninput="document.getElementById('nl_val').textContent=this.value"/>
+            <div class="slider-labels"><span>0</span><span>5</span><span>10</span></div>
+          </div>
+          <div class="slider-wrap">
+            <div class="slider-top"><label>Past Defaults</label><span class="val-badge" id="def_val">0</span></div>
+            <input type="range" id="defaults" min="0" max="5" value="0" oninput="document.getElementById('def_val').textContent=this.value"/>
+            <div class="slider-labels"><span>0</span><span>2–3</span><span>5+</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="section-gap">
+        <div class="section-label">Loan Purpose & Security</div>
+        <div class="grid-2">
+          <div class="field"><label>Purpose of Loan</label>
+            <select id="purpose"><option value="">Select</option><option value="home">Home Purchase</option><option value="education">Education</option><option value="vehicle">Vehicle</option><option value="business">Business Expansion</option><option value="medical">Medical</option><option value="personal">Personal Use</option><option value="debt_consolidation">Debt Consolidation</option></select>
+          </div>
+          <div class="field"><label>Collateral Available</label>
+            <select id="collateral"><option value="none">None</option><option value="property">Property</option><option value="vehicle">Vehicle</option><option value="gold">Gold</option><option value="fd">Fixed Deposit</option></select>
+          </div>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="predict()" id="submitBtn">⚡ Predict & Submit to Bank</button>
+      <div class="pending-banner" id="pendingBanner"><span class="pulse-dot"></span>Application submitted — awaiting banker's decision...</div>
+      <div class="app-id-badge" id="appIdBadge">Application ID: <strong id="appIdVal"></strong></div>
+    </div>
+  </div>
+
+  <div class="sticky-result">
+    <div class="result-panel">
+      <div class="idle-state" id="idle_state">
+        <div class="idle-icon">🏦</div>
+        <h3>Your result will appear here</h3>
+        <p>Complete the form and click predict to get your instant loan approval decision.</p>
+        <div class="checklist">
+          <div class="check-item"><span class="ck">✓</span>Credit score analysis</div>
+          <div class="check-item"><span class="ck">✓</span>Debt-to-income calculation</div>
+          <div class="check-item"><span class="ck">✓</span>Employment risk assessment</div>
+          <div class="check-item"><span class="ck">✓</span>EMI & interest estimation</div>
+          <div class="check-item"><span class="ck">✓</span>Max eligible loan amount</div>
+        </div>
+      </div>
+      <div id="result_state" class="hidden">
+        <div class="result-header">
+          <div class="result-status" id="r_decision"></div>
+          <div class="result-sub" id="r_sub"></div>
+          <div class="score-circle-wrap">
+            <div class="score-circle">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="10"/>
+                <circle id="score_arc" cx="60" cy="60" r="50" fill="none" stroke="#3b82f6" stroke-width="10" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" style="transition:stroke-dashoffset 1s ease,stroke .5s ease"/>
+              </svg>
+              <div class="score-circle-text"><span class="num" id="r_score">0</span><span class="lbl">score</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-body">
+          <div class="metrics-grid">
+            <div class="metric-card"><div class="m-label">Max Eligible</div><div class="m-val" id="r_max">—</div></div>
+            <div class="metric-card"><div class="m-label">Interest Rate</div><div class="m-val" id="r_rate">—</div></div>
+            <div class="metric-card"><div class="m-label">Monthly EMI</div><div class="m-val" id="r_emi">—</div></div>
+            <div class="metric-card"><div class="m-label">DTI Ratio</div><div class="m-val" id="r_dti">—</div></div>
+          </div>
+          <div class="section-label" style="margin-bottom:14px">Risk Factor Breakdown</div>
+          <div class="factors" id="r_factors"></div>
+          <div class="section-label" style="margin-bottom:12px">Key Reasons</div>
+          <div class="reasons" id="r_reasons"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>LoanIQ Applicant Portal</strong> — For illustrative purposes only. Not financial advice.
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBR5YmP8R8Yt5DJWhZOUx43JsJe4KmJrbQ",
+  authDomain: "loan-prediction-system-934d0.firebaseapp.com",
+  databaseURL: "https://loan-prediction-system-934d0-default-rtdb.firebaseio.com",
+  projectId: "loan-prediction-system-934d0",
+  storageBucket: "loan-prediction-system-934d0.firebasestorage.app",
+  messagingSenderId: "591654345608",
+  appId: "1:591654345608:web:78dbd96f0825358818383d"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+
+let currentAppId = null;
+let notifOpen    = false;
+let seenDecisions = new Set();
+
+window.updateCS = function(val) {
+  const v = parseInt(val);
+  document.getElementById('cs_val').textContent = v;
+  const pct = ((v - 300) / 600) * 100;
+  const bar = document.getElementById('cs_bar');
+  bar.style.width = pct + '%';
+  let color, label;
+  if      (v >= 800) { color='#10b981'; label='Excellent'; }
+  else if (v >= 750) { color='#34d399'; label='Very Good'; }
+  else if (v >= 700) { color='#60a5fa'; label='Good'; }
+  else if (v >= 650) { color='#f59e0b'; label='Fair'; }
+  else if (v >= 600) { color='#f97316'; label='Poor'; }
+  else               { color='#ef4444'; label='Very Poor'; }
+  bar.style.background = color;
+  const txt = document.getElementById('cs_text');
+  txt.textContent = label; txt.style.color = color;
+};
+updateCS(650);
+
+window.toggleNotif = function() {
+  notifOpen = !notifOpen;
+  document.getElementById('notifPanel').classList.toggle('open', notifOpen);
+  if (notifOpen) {
+    document.getElementById('notifCount').classList.remove('show');
+    document.getElementById('notifCount').textContent = '0';
+  }
+};
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#notifBell') && !e.target.closest('#notifPanel')) {
+    notifOpen = false;
+    document.getElementById('notifPanel').classList.remove('open');
+  }
+});
+
+function genId() {
+  return 'APP-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
+}
+function arcColor(r) { return r >= 0.7 ? '#10b981' : r >= 0.4 ? '#f59e0b' : '#ef4444'; }
+
+window.predict = async function() {
+  const name         = document.getElementById('full_name').value.trim();
+  const age          = parseInt(document.getElementById('age').value) || 0;
+  const employment   = document.getElementById('employment').value;
+  const years_emp    = parseInt(document.getElementById('years_emp').value) || 0;
+  const income       = parseFloat(document.getElementById('income').value) || 0;
+  const loan_amount  = parseFloat(document.getElementById('loan_amount').value) || 0;
+  const tenure       = parseInt(document.getElementById('tenure').value) || 0;
+  const existing_emi = parseFloat(document.getElementById('existing_emi').value) || 0;
+  const credit_score = parseInt(document.getElementById('credit_score').value);
+  const num_loans    = parseInt(document.getElementById('num_loans').value);
+  const defaults     = parseInt(document.getElementById('defaults').value);
+  const purpose      = document.getElementById('purpose').value;
+  const collateral   = document.getElementById('collateral').value;
+
+  if (!name || !income || !loan_amount || !employment || !tenure || !purpose) {
+    alert('Please fill in all required fields.'); return;
+  }
+
+  let score = 0, reasons = [];
+
+  const cs_p = credit_score>=800?30:credit_score>=750?26:credit_score>=700?21:credit_score>=650?15:credit_score>=600?9:credit_score>=550?4:0;
+  score += cs_p;
+  if (credit_score >= 750) reasons.push({t:`Credit score ${credit_score} — excellent standing`, c:'#10b981'});
+  else if (credit_score >= 650) reasons.push({t:`Credit score ${credit_score} — acceptable`, c:'#f59e0b'});
+  else reasons.push({t:`Credit score ${credit_score} — below ideal threshold`, c:'#ef4444'});
+
+  const monthly_income = income / 12;
+  const dti = (existing_emi + loan_amount / tenure) / monthly_income;
+  const dti_p = dti<=0.25?25:dti<=0.35?20:dti<=0.45?13:dti<=0.55?6:0;
+  const dtiPct = Math.round(dti * 100);
+  score += dti_p;
+  if (dti <= 0.35) reasons.push({t:`DTI ratio ${dtiPct}% — comfortable`, c:'#10b981'});
+  else if (dti <= 0.50) reasons.push({t:`DTI ratio ${dtiPct}% — moderately high`, c:'#f59e0b'});
+  else reasons.push({t:`DTI ratio ${dtiPct}% — exceeds safe limit`, c:'#ef4444'});
+
+  let emp_p = employment==='salaried'?15:employment==='business'?12:employment==='self_employed'?10:employment==='freelance'?6:0;
+  if (years_emp >= 3) emp_p = Math.min(emp_p + 3, 15);
+  score += emp_p;
+  if (employment === 'salaried') reasons.push({t:'Salaried employment — stable income stream', c:'#10b981'});
+  else if (employment === 'unemployed') reasons.push({t:'No employment — high repayment risk', c:'#ef4444'});
+  else reasons.push({t:`${employment.replace('_',' ')} — variable income considered`, c:'#f59e0b'});
+
+  const def_p = defaults===0?15:defaults===1?7:defaults===2?3:0;
+  score += def_p;
+  if (defaults === 0) reasons.push({t:'Zero defaults — strong repayment history', c:'#10b981'});
+  else reasons.push({t:`${defaults} past default(s) — significant red flag`, c:'#ef4444'});
+
+  const col_p = {none:0,vehicle:5,gold:8,fd:7,property:10}[collateral] || 0;
+  score += col_p;
+  if (collateral !== 'none') reasons.push({t:`${collateral} as collateral — reduces lender exposure`, c:'#10b981'});
+  score += ({home:5,education:4,vehicle:4,medical:4,business:3,personal:2,debt_consolidation:1}[purpose] || 2);
+
+  const pct = Math.round((score / 100) * 100);
+  let decision, statusClass, subText, arcC;
+  if (pct >= 68)      { decision='Approved ✓';     statusClass='status-approved'; subText='Application meets lending criteria';     arcC='#10b981'; }
+  else if (pct >= 50) { decision='Under Review ◎'; statusClass='status-review';   subText='Requires manual underwriter review';     arcC='#f59e0b'; }
+  else                { decision='Rejected ✗';      statusClass='status-rejected'; subText='Does not meet minimum lending criteria'; arcC='#ef4444'; }
+
+  const suggestedRate = Math.min(9.5 + ((100 - pct) / 100) * 8, 22).toFixed(1);
+  const safeMax = Math.max(0, Math.round(monthly_income * 0.5 * tenure - existing_emi * tenure));
+  const r = (parseFloat(suggestedRate) / 12) / 100;
+  const emi = Math.round(loan_amount * r * Math.pow(1+r, tenure) / (Math.pow(1+r, tenure) - 1));
+
+  document.getElementById('idle_state').classList.add('hidden');
+  document.getElementById('result_state').classList.remove('hidden');
+  document.getElementById('r_decision').textContent = decision;
+  document.getElementById('r_decision').className = 'result-status ' + statusClass;
+  document.getElementById('r_sub').textContent = subText;
+  document.getElementById('r_score').textContent = pct + '%';
+  const arc = document.getElementById('score_arc');
+  arc.style.stroke = arcC;
+  setTimeout(() => { arc.style.strokeDashoffset = 314 - (pct/100)*314; }, 100);
+  document.getElementById('r_max').textContent  = '₹' + safeMax.toLocaleString('en-IN');
+  document.getElementById('r_rate').textContent = suggestedRate + '% p.a.';
+  document.getElementById('r_emi').textContent  = '₹' + emi.toLocaleString('en-IN') + '/mo';
+  document.getElementById('r_dti').textContent  = dtiPct + '%';
+
+  const factors = [
+    {name:'Credit score',    pts:cs_p,  max:30},
+    {name:'Debt-to-income',  pts:dti_p, max:25},
+    {name:'Employment',      pts:emp_p, max:15},
+    {name:'Default history', pts:def_p, max:15},
+    {name:'Collateral',      pts:col_p, max:10},
+  ];
+  document.getElementById('r_factors').innerHTML = factors.map(f => {
+    const ratio = Math.round((f.pts/f.max)*100);
+    const c = arcColor(f.pts/f.max);
+    return `<div class="factor-row"><div class="factor-top"><span class="f-name">${f.name}</span><span class="f-pct" style="color:${c}">${ratio}%</span></div><div class="factor-bar-bg"><div class="factor-bar-fill" style="background:${c}" data-w="${ratio}"></div></div></div>`;
+  }).join('');
+  setTimeout(() => document.querySelectorAll('.factor-bar-fill').forEach(el => el.style.width = el.dataset.w + '%'), 80);
+  document.getElementById('r_reasons').innerHTML = reasons.map(r =>
+    `<div class="reason-item"><span class="reason-dot" style="background:${r.c};box-shadow:0 0 6px ${r.c}44"></span>${r.t}</div>`
+  ).join('');
+
+  currentAppId = genId();
+  try {
+    await addDoc(collection(db, 'applications'), {
+      id: currentAppId, name, age, employment, years_emp,
+      income, loan_amount, tenure, existing_emi,
+      credit_score, num_loans, defaults, purpose, collateral,
+      score: pct, decision: decision.replace(/[✓✗◎]/g,'').trim(),
+      suggestedRate, emi, safeMax, dtiPct,
+      status: 'pending',
+      submittedAt: serverTimestamp(),
+      reasons: reasons.map(r => r.t)
+    });
+  } catch(e) {
+    console.error('Firestore error:', e);
+    alert('Failed to submit to server. Check console.');
+    return;
+  }
+
+  document.getElementById('pendingBanner').classList.add('show');
+  document.getElementById('appIdBadge').classList.add('show');
+  document.getElementById('appIdVal').textContent = currentAppId;
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = '✅ Application Submitted';
+
+  const q = query(collection(db, 'decisions'), orderBy('decidedAt'));
+  onSnapshot(q, snapshot => {
+    snapshot.docChanges().forEach(change => {
+      if (change.type === 'added') {
+        const d = change.doc.data();
+        if (d.appId === currentAppId && !seenDecisions.has(d.id)) {
+          seenDecisions.add(d.id);
+          showDecisionNotification(d);
+        }
+      }
+    });
+  });
+};
+
+function showDecisionNotification(d) {
+  const ok    = d.decision === 'approved';
+  const label = ok ? 'APPROVED' : 'REJECTED';
+  const countEl = document.getElementById('notifCount');
+  countEl.textContent = (parseInt(countEl.textContent) || 0) + 1;
+  countEl.classList.add('show');
+
+  const list  = document.getElementById('notifList');
+  const empty = list.querySelector('.notif-empty');
+  if (empty) empty.remove();
+
+  const time = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  const item = document.createElement('div');
+  item.className = `notif-item ${ok ? 'approved' : 'rejected'}`;
+  item.innerHTML = `
+    <div class="notif-item-top">
+      <span class="notif-badge ${ok?'approved':'rejected'}">${label}</span>
+      <span class="notif-time">${time}</span>
+    </div>
+    <div class="notif-msg">${ok
+      ? `Great news! Your application <strong style="color:#60a5fa">${d.appId}</strong> has been <strong style="color:#10b981">approved</strong>.`
+      : `Your application <strong style="color:#60a5fa">${d.appId}</strong> has been <strong style="color:#ef4444">rejected</strong>.`
+    }</div>
+    ${d.note ? `<div class="notif-loan">📝 Note: ${d.note}</div>` : ''}
+    <div class="notif-loan">Loan: ₹${parseInt(d.loanAmount||0).toLocaleString('en-IN')} • Score: ${d.score}%</div>`;
+  list.insertBefore(item, list.firstChild);
+  document.getElementById('notifTimestamp').textContent = 'Updated ' + time;
+
+  const toast = document.getElementById('toast');
+  toast.className = `toast ${ok ? 'approved' : 'rejected'}`;
+  document.getElementById('toastIcon').textContent  = ok ? '✅' : '❌';
+  document.getElementById('toastTitle').textContent = ok ? '🎉 Loan Approved!' : '❌ Loan Rejected';
+  document.getElementById('toastMsg').textContent   = ok
+    ? 'Your application has been approved!'
+    : 'Your application was not approved this time.';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 5000);
+  document.getElementById('pendingBanner').classList.remove('show');
+}
+</script>
+</body>
+</html>
